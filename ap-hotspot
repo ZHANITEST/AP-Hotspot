@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this script. If not, see <http://www.gnu.org/licenses/>.
 
+# Translator(Korean): XKY(https://github.com/xky)
 # Global variables
 logfile="/tmp/hostapd.log"
 pidfile="/tmp/hotspot.pid"
@@ -56,7 +57,7 @@ su $user -s /bin/bash -c "${DBUS} notify-send -h int:transient:1 -i \"network-wi
 check_root() {
 # Check if user is root
 if [[ ! $(whoami) = "root" ]]; then
-	show_err "Please run the script as root"
+	show_err "관리자 권한으로 실행해주세요"
 	exit 1
 fi
 }
@@ -64,7 +65,7 @@ fi
 check_supported() {
 # Check if the wireless card supports Access Point mode. This script won't work if it doesn't support it
 if [[ ! $(iw list 2>&1 | grep -A6 "Supported interface modes" | grep AP$) ]]; then
-	show_err "Your wireless card or driver does not support Access Point mode"
+	show_err "이 무선 랜카드는 액세스 포인트 모드를 지원하지 않습니다"
 	exit 1
 fi
 }
@@ -72,11 +73,11 @@ fi
 check_network() {
 # Check if Wireless is disabled
 if [[ $(iwconfig "$INTERFACE_WLAN" 2>&1 | grep "Tx-Power=off") ]]; then
-	show_err "WiFi is disabled, please enable WiFi before running this script"
+	show_err "와이파이가 비활성화되어있습니다. 와이파이를 활성화 한 후에 이 스크립트를 다시 실행해주세요"
 	exit 1
 # Check if Wireless is enabled, but connected to a network
 elif [[ ! $(iwconfig "$INTERFACE_WLAN" 2>&1 | grep "ESSID:off/any") && $(iwconfig "$INTERFACE_WLAN" 2>&1 | grep "ESSID:") ]]; then
-	show_err "Please disconnect WiFi before proceeding"
+	show_err "이 작업을 하기 전에, 먼저 와이파이 연결을 끊어주세요"
 	exit 1
 fi
 }
@@ -87,10 +88,10 @@ lines_con="0"
 lines_dis="0"
 while [[ -f "$logfile" ]]; do
 	if [[ "$lines_con" < $(grep -c "AP-STA-CONNECTED" "$logfile") ]]; then
-		show_notify "New device connected to Hotspot"
+		show_notify "새 장치가 핫스팟에 연결되었습니다"
 		(( lines_con++ ))
 	elif [[ "$lines_dis" < $(grep -c "AP-STA-DISCONNECTED" "$logfile") ]]; then
-		show_notify "Device disconnected from Hotspot"
+		show_notify "핫스팟으로부터 장치의 연결이 끊겼습니다"
 		(( lines_dis++ ))
 	fi
 	sleep 5
@@ -106,33 +107,33 @@ check_supported
 rm -f "$hotspotconfig"
 rm -f "$dnsmasqconfig"
 # Detect configuration
-show_msg "Detecting configuration..."
+show_msg "설정 찾는 중..."
 INTERFACE_NET=$(route | grep -iw "default" | awk '{print $NF}')
 INTERFACE_WLAN=$(iwconfig 2>&1 | grep "^wlan" | sed -e 's/ .*//g' | tail -n 1)
 SSID="myhotspot"
 WPAPASS="qwerty0987"
 # Network interface connected to the Internet
 if [[ ! $INTERFACE_NET ]]; then
-	show_warn "Failed to detect the network interface connected to the Internet. Please enter your network interface (e.g.- eth1):"
+	show_warn "네트워크에 연결된 인터페이스를 찾을 수 없습니다. 네트워크 인터페이스를 직접 입력해주세요 (예 - eth1):"
 else
-	show_msg "Detected $INTERFACE_NET as the network interface connected to the Internet. Press ENTER if this is correct or enter the desired interface below (e.g.- eth0, ppp0 etc.):"
+	show_msg "네트워크에 연결된 $INTERFACE_NET 인터페이스를 찾았습니다. 이 인터페이스가 맞는 경우 엔터를 눌러주세요 (예- eth0, ppp0 etc.):"
 fi
 read interface_net
 [[ "$interface_net" ]] && INTERFACE_NET="$interface_net"
 # WiFi interface
 if [[ ! $INTERFACE_WLAN ]]; then
-	show_warn "Failed to detect the WiFi interface. Please enter your WiFi interface (e.g.- wlan0):"
+	show_warn "와이파이 인터페이스를 찾을 수 없습니다. 와이파이 인터페이스를 입력해주세요 (예- wlan0):"
 else
-	show_msg "Detected $INTERFACE_WLAN as your WiFi interface. Press ENTER if this is correct or enter the desired interface (e.g.- wlan1):"
+	show_msg "와이파이 인터페이스인 $INTERFACE_WLAN을 찾았습니다. 인터페이스가 맞는 경우 엔터를 눌러주세요 (예- wlan1):"
 fi
 read interface_wlan
 [[ "$interface_wlan" ]] && INTERFACE_WLAN="$interface_wlan"
 # Hotspot SSID
-show_msg "Enter the desired Access Point name or press ENTER to use the default one ($SSID):"
+show_msg "액세스 포인트 이름을 입력 후 엔터를 누르거나, 기본 값($SSID)으로 사용할 경우 그냥 엔터 글쇠를 눌러주세요.:"
 read ssid
 [[ "$ssid" ]] && SSID="$ssid"
 # WPA Passphrase
-show_msg "Enter the desired WPA Passphrase below or press ENTER to use the default one ($WPAPASS):"
+show_msg "사용할 비밀번호를 입력한 후 엔터를 누르거나, 기본값($WPAPASS)을 사용하실 경우 엔터를 누르세요:"
 read wpapass
 [[ "$wpapass" ]] && WPAPASS="$wpapass"
 # Write the hostapd config file
@@ -180,7 +181,7 @@ INTERFACE_NET=$(grep "INTERFACE_NET" "$dnsmasqconfig" | sed -e 's/#INTERFACE_NET
 start() {
 # Check previous process
 if [[ -f "$pidfile" ]]; then
-	show_err "Another process is already running"
+	show_err "이미 다른 프로세스가 실행되고 있습니다"
 	exit 1
 fi
 # Check root
@@ -193,7 +194,7 @@ get_vars
 check_network
 # Write the PID to a file
 echo "$$" > "$pidfile"
-show_info "Starting Wireless Hotspot..."
+show_info "무선 핫스팟 시작중..."
 # Set up the services
 service hostapd stop 2>&1 | show_debug
 service dnsmasq stop 2>&1 | show_debug
@@ -214,14 +215,14 @@ if [[ $(hostapd --help 2>&1 | grep "\-f") ]]; then
 	hostapd -B "$hotspotconfig" -f "$logfile"
 	while :
 	do
-		[[ $(grep "Using interface" "$logfile") ]] && show_info "Wireless Hotspot active" && show_notify "Wireless Hotspot active" && break
+		[[ $(grep "Using interface" "$logfile") ]] && show_info "무선 핫스팟 활성화" && show_notify "무선 핫스팟 활성화" && break
 		sleep 5
 	done
 	check_connected 2>&1 &
 	disown
 else	
 	hostapd -B "$hotspotconfig" 2>&1 | show_debug
-	show_info "Wireless Hotspot active"
+	show_info "무선 핫스팟이 활성화됨"
 fi
 }
 
@@ -231,7 +232,7 @@ check_root
 # Get variables
 get_vars
 # Kill process
-show_info "Stopping Wireless Hotspot..."
+show_info "무선 핫스팟 중지중..."
 if [[ -f "$pidfile" ]]; then
 	pid=$(cat "$pidfile")
 	rm -f "$pidfile"
@@ -256,7 +257,7 @@ ifconfig "$INTERFACE_WLAN" up
 }
 
 restart() {
-show_info "Restarting Wireless Hotspot..."
+show_info "무선 핫스팟 재시작중..."
 stop
 start
 }
@@ -275,8 +276,8 @@ case "$1" in
 			start;;
 	*)
 			args=( "start" "stop" "restart" "configure" "debug" )
-			desc=( "start wireless hotspot" "stop wireless hotspot" "restart wireless hotspot" "configure hotspot" "start with detailed messages" )
-			echo -e "Usage:\tap-hotspot [argument]\n"
+			desc=( "무선 핫스팟 시작" "무선 핫스팟 중지" "무선 핫스팟 재시작" "핫스팟 설정" "자세한 내용과 함께 시작" )
+			echo -e "입력:\tap-hotspot [argument]\n"
 			for ((i=0; i < ${#args[@]}; i++)); do
 				printf "\t%-15s%-s\n" "${args[i]}" "${desc[i]}"
 			done
